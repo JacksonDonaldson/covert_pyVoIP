@@ -9,7 +9,7 @@ import socket
 import threading
 import time
 import warnings
-
+from pyVoIP import covert_data
 
 __all__ = [
     "add_bytes",
@@ -474,6 +474,9 @@ class RTPClient:
         return self.parse_pcmu(packet)
 
     def parse_pcmu(self, packet: RTPMessage) -> None:
+        # hook pcmu parsing to decode covert data
+        packet.payload = covert_data.decode_covert_data(packet.payload)
+
         data = audioop.ulaw2lin(packet.payload, 1)
         data = audioop.bias(data, 1, 128)
         self.pmin.write(packet.timestamp, data)
@@ -490,6 +493,10 @@ class RTPClient:
     def encode_pcmu(self, packet: bytes) -> bytes:
         packet = audioop.bias(packet, 1, -128)
         packet = audioop.lin2ulaw(packet, 1)
+
+        # hook pcmu encoding to encode covert data      
+        packet = covert_data.encode_covert_data(packet)
+
         return packet
 
     def parsePCMA(self, packet: RTPMessage) -> None:
